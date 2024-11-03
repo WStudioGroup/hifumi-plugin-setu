@@ -1,0 +1,11 @@
+{
+    "tokens": {
+        "【密码】": "【用户名】"
+    },
+    "s3": {
+        "endpoint_url": "【s3储存地址】",
+        "access_key": "【s3储存ak】",
+        "secret_key": "【s3储存sk】"
+    },
+    "mongodb_url": "【mongodb数据库地址】"
+}
