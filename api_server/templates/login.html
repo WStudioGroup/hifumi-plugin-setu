@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Hifumi色图审核</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="referrer" content="no-referrer">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+        <script>
+            var sumbitable = "{{ sumbitable }}";
+                
+            window.onload = function (){
+                if (sumbitable == "True") {
+                    // 可以提交
+                    document.getElementById("pass").disabled = true;
+                    document.getElementById("smash").disabled = true;
+                    alert("图片已全部审核完，请点击提交")
+                } else {
+                    document.getElementById("sumbit").disabled = true;
+                }
+            }
+
+            function request(action, img="") {
+                var url = "/audit/"+action;
+                console.log(url);
+                var httpRequest = new XMLHttpRequest();
+                httpRequest.open('POST', url, true);
+                httpRequest.setRequestHeader("Content-type", "application/json");
+                var obj = {
+                    "img_name": img.replace("get_temp/","")
+                };
+                if (action == "sumbit") {
+                    alert("正在上传，请稍等");
+                    document.getElementById("sumbit").disabled = true;
+                    showOverlay();
+                }
+                httpRequest.send(JSON.stringify(obj));
+                // 响应后的回调函数
+                httpRequest.onreadystatechange = function () {
+                    if (httpRequest.readyState == 4 && httpRequest.status == 200) {
+                        var json = httpRequest.responseText;
+                        console.log(json);
+                        if (action != "sumbit") {
+                            location.reload();
+                        }
+                    }
+                };
+            }
+
+            // 显示遮罩的函数
+            function showOverlay() {
+                document.getElementById('overlay').style.display = 'flex';
+            }
+
+            // 隐藏遮罩的函数
+            function hideOverlay() {
+                document.getElementById('overlay').style.display = 'none';
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                var socket = io.connect('http://' + document.domain + ':' + location.port + '/upload');
+
+                socket.on('connect', function() {
+                    console.log('Connected to the server');
+                });
+
+                socket.on('upload_complete', function(msg) {
+                    hideOverlay();
+                    alert("上传完毕");
+                    location.reload();
+                });
+
+                socket.on('update_upload_progress', function(msg) {
+                    // 更新上传进度
+                    document.getElementById("upload_progress").innerText = "已上传: " + msg
+                });
+
+                socket.on('disconnect', function() {
+                    console.log('Disconnected from the server');
+                });
+            })
+        </script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                background-size: cover;
+            }
+            .container {
+                max-width: 100%;
+                margin: auto;
+                text-align: center;
+            }
+            .button {
+                display: inline-block;
+                border-radius: 4px;
+                background-color: #209df7;
+                backdrop-filter: blur(6px);
+                border: none;
+                color: #FFFFFF;
+                text-align: center;
+                font-size: 18px;
+                padding: 20px;
+                width: 200px;
+                transition: all 0.5s;
+                cursor: pointer;
+                margin: 5px;
+            }
+            .button span {
+                cursor: pointer;
+                display: inline-block;
+                position: relative;
+                transition: 0.5s;
+            }
+            .button span:after {
+                content: '»';
+                position: absolute;
+                opacity: 0;
+                top: 0;
+                right: -20px;
+                transition: 0.5s;
+            }
+            .button:hover span {
+                padding-right: 25px;
+            }
+            .button:hover span:after {
+                opacity: 1;
+                right: 0;
+            }
+            /* 覆盖全屏的遮罩样式 */
+            #overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5); /* 半透明灰色背景 */
+                display: none; /* 默认不显示 */
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+            }
+            /* 上传中文本样式 */
+            #overlay-text {
+                font-size: 24px;
+                font-weight: bold;
+                color: #fff; /* 白色文字 */
+            }
+        </style>
+    </head>
+    <body background="{{ url_for('static', filename='Image_1724854236490.jpg') }}">
+        <div class="container">
+            <h2>Hifumi色图审核</h2>
+            <h3>登录用户: {{ username }}</h3>
+            <h3> {{ ready_to_sumbit }}</h3>
+            <p class="img">{{ img_url }}</p>
+            <h3>标签：{{ img_tags }}</h3>
+            <button type="button" class="button" onclick="window.open('{{ img_url }}', '_blank')"><span>放大查看</span></button>
+            <br>
+            <img src="{{ img_url }}" style="width: 50%;height: 50%;object-fit: cover;">
+            <br>
+            <button type="button" class="button" id="pass" onclick="request('pass', '{{ img_url }}');" style="background-color: rgb(19, 231, 44);"><span>通过</span></button>
+            <button type="button" class="button" id="smash" onclick="request('smash', '{{ img_url }}');" style="background-color: red;"><span>不通过</span></button>
+            <br><br><br>
+            <button type="button" class="button" id="sumbit" onclick="request('sumbit')"><span>提交全部</span></button>
+        </div>
+        <!-- 加载提示遮罩 -->
+        <div id="overlay">
+            <div id="overlay-text">上传中...</div>
+            <br>
+            <div id="upload_progress">已上传: 0/0</div>
+        </div>
+    </body>
+</html>
